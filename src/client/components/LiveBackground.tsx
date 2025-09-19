@@ -171,8 +171,8 @@ export const LiveBackground: React.FC<LiveBackgroundProps> = ({
     const { width, height } = container.getBoundingClientRect();
 
     const initial: EmoticonInstance[] = [];
-    const totalEmoticons = 18;
-    const totalChars = 6;
+    const totalEmoticons = 14;
+    const totalChars = 5;
 
     for (let i = 0; i < totalEmoticons; i++) {
       const emoticon = getRandomEmoticon(currentTier, false);

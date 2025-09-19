@@ -41,7 +41,7 @@ export const createPostWithDeck = async (deckData: Deck) => {
   // await reddit.setPostFlair({
   //   postId: post.id,
   //   subredditName,
-  //   flairTemplateId: '43a728c2-90b1-11f0-a3d7-725bb7b9ec89',
+  //   flairTemplateId: '73067818-954b-11f0-b172-3655fe047759',
   //   text: deckData.flairText ?? 'not defined',
   //   // You can also pass backgroundColor | textColor | cssClass if needed
   // });
