@@ -100,10 +100,14 @@ export const recordAnswer = async ({
     // Single card answer
     await redis.hIncrBy(statsKey, answer, 1);
   } else {
-    // Sequence answer - increment each card
-    for (const cardId of answer) {
-      await redis.hIncrBy(statsKey, cardId, 1);
-    }
+    // Sequence answer - increment each card and track positions
+    answer.forEach((cardId, position) => {
+      // Increment card count
+      redis.hIncrBy(statsKey, cardId, 1);
+      // Track position-specific data: cardId:position -> count
+      const positionKey = `${cardId}:${position + 1}`; // positions are 1-based
+      redis.hIncrBy(statsKey, positionKey, 1);
+    });
   }
 
   // Track the keys
@@ -123,24 +127,48 @@ export const getQuestionStats = async ({
   cardIds: string[];
 }): Promise<QuestionStats> => {
   const statsKey = getQuestionStatsKey(postId, questionId);
-  
+
   // Get all card stats at once
   const cardStatsRaw = await redis.hGetAll(statsKey);
   const cardStats: Record<string, number> = {};
-  
-  // Convert string values to numbers
-  for (const [cardId, count] of Object.entries(cardStatsRaw)) {
-    cardStats[cardId] = parseInt(count) || 0;
+  const positionStats: Record<string, Record<number, number>> = {};
+
+  // Convert string values to numbers and parse position data
+  for (const [key, countStr] of Object.entries(cardStatsRaw)) {
+    const count = parseInt(countStr as string) || 0;
+
+    // Check if this is a position-specific key (format: cardId:position)
+    const positionMatch = key.match(/^(.+):(\d+)$/);
+    if (positionMatch) {
+      const [, cardId, positionStr] = positionMatch;
+      if (cardId && positionStr) {
+        const position = parseInt(positionStr);
+
+        if (!positionStats[cardId]) {
+          positionStats[cardId] = {};
+        }
+        positionStats[cardId][position] = count;
+      }
+    } else {
+      // Regular card count
+      cardStats[key] = count;
+    }
   }
-  
+
   // Get total responses
   const totalResponses = await redis.get(`${statsKey}:total`);
-  
-  return {
+
+  const result: QuestionStats = {
     questionId,
     cardStats,
     totalResponses: totalResponses ? parseInt(totalResponses) : 0,
   };
+
+  if (Object.keys(positionStats).length > 0) {
+    result.positionStats = positionStats;
+  }
+
+  return result;
 };
 
 function calculateSequenceSimilarity(seqA: string[], seqB: string[]): number {

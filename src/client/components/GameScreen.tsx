@@ -223,6 +223,15 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     }
   };
 
+  const getGamemodeColor = (scoringMode: string) => {
+    switch (scoringMode) {
+      case 'conformist': return '#22c55e'; // green-500
+      case 'contrarian': return '#ef4444'; // red-500
+      case 'trivia': return '#3b82f6'; // blue-500
+      default: return '#fbbf24'; // yellow-500
+    }
+  };
+
 
   const getProgressPercentage = () => {
     if (showResults) {
@@ -398,7 +407,10 @@ const getTintStyle = (cardId: string) => {
 
     let backgroundColor = '';
 
-    if (selectedCardId) {
+    if (showResults) {
+      // During answer time, use gamemode color for lightbar
+      backgroundColor = getGamemodeColor(playerSession.scoringMode);
+    } else if (selectedCardId) {
       if (isTrivia) {
         // For trivia, use correctness (green for correct, red for incorrect)
         backgroundColor = isCorrect ? 'rgba(0, 100, 0, 0.7)' : 'rgba(100, 0, 0, 0.7)';
@@ -578,6 +590,7 @@ const getTintStyle = (cardId: string) => {
           getTintStyle={getTintStyle}
           getPositionPercentage={getPositionPercentage}
           getPositionTintStyle={getPositionTintStyle}
+          scoringMode={playerSession.scoringMode}
         />
       </div>
 

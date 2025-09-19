@@ -238,9 +238,19 @@ export const DebateDueler: React.FC = () => {
       if (typeof answerRecord.answer === 'string') {
         localQuestionStats.cardStats[answerRecord.answer] = (localQuestionStats.cardStats[answerRecord.answer] || 0) + 1;
       } else {
-        // For sequence questions, update cardStats
-        answerRecord.answer.forEach((cardId) => {
+        // For sequence questions, update cardStats and positionStats
+        answerRecord.answer.forEach((cardId, position) => {
           localQuestionStats.cardStats[cardId] = (localQuestionStats.cardStats[cardId] || 0) + 1;
+
+          // Track position-specific data
+          if (!localQuestionStats.positionStats) {
+            localQuestionStats.positionStats = {};
+          }
+          if (!localQuestionStats.positionStats[cardId]) {
+            localQuestionStats.positionStats[cardId] = {};
+          }
+          const positionKey = position + 1; // positions are 1-based
+          localQuestionStats.positionStats[cardId][positionKey] = (localQuestionStats.positionStats[cardId][positionKey] || 0) + 1;
         });
       }
 
