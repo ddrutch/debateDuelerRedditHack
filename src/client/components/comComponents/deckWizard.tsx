@@ -1,0 +1,675 @@
+import React, { useState } from 'react';
+import { THEME_FLAIRS } from './constants';
+import { Deck, GameCard, Question } from '../../../shared/types/game';
+
+interface DeckData {
+  title: string;
+  description: string;
+  theme: string;
+  customTheme: string;
+  flairCSS: string;
+  questions: Question[];
+  questionStats: [], 
+}
+
+interface CreateDeckWizardProps {
+  onClose: () => void;
+  onSubmit: (deck: Deck) => void;
+  username: string;
+  userID : string ;
+  isCreatingPost?: boolean;
+}
+
+export const CreateDeckWizard: React.FC<CreateDeckWizardProps> = ({ onClose, onSubmit, username, userID, isCreatingPost = false }) => {
+  const [step, setStep] = useState(1);
+  const [questionCount] = useState(5);
+  const [errors, setErrors] = useState({
+    title: '',
+    description: '',
+    questions: [] as string[],
+  });
+
+  const [deck, setDeck] = useState<DeckData>({
+    title: '',
+    description: '',
+    theme: 'battles',
+    flairCSS: 'battles-flair',
+    customTheme: '',
+    questions: [],
+    questionStats: [],
+  });
+
+
+  const createGameCard = (text: string, isCorrect: boolean, sequenceOrder: number): GameCard => ({
+    id: `card_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+    text,
+    isCorrect,
+    sequenceOrder
+  });
+
+
+  // Initialize a question with proper GameCard objects
+  const initializeQuestion = (): Question => ({
+    id: `temp_${Date.now()}`,
+    prompt: '',
+    cards: [
+      createGameCard('', true, 1),
+      createGameCard('', false, 2),
+      createGameCard('', false, 3),
+      createGameCard('', false, 4),
+    ],
+    timeLimit: 20,
+    questionType: 'multiple-choice',
+  });
+
+
+  const [currentQuestion, setCurrentQuestion] = useState<Question>(initializeQuestion());
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  // Store all question data to preserve when navigating back
+  const [questionData, setQuestionData] = useState<(Question | null)[]>(Array(5).fill(null));
+
+  const isLastStep = () => step === 1 + questionCount + 1;
+
+  const validateStep1 = () => {
+    const newErrors = { title: '', description: '' };
+    let isValid = true;
+    
+    if (!deck.title.trim()) {
+      newErrors.title = 'Title is required';
+      isValid = false;
+    }
+    
+    if (!deck.description.trim()) {
+      newErrors.description = 'Description is required';
+      isValid = false;
+    }
+    
+    setErrors({ ...errors, ...newErrors });
+    return isValid;
+  };
+
+  const validateQuestion = () => {
+    const questionErrors = [...errors.questions];
+    let isValid = true;
+    
+    if (!currentQuestion.prompt.trim()) {
+      questionErrors[step - 2] = 'Question prompt is required';
+      isValid = false;
+    }
+    
+    // Check at least 2 non-empty options
+    const validOptions = currentQuestion.cards.filter(card => card.text.trim()).length;
+    if (validOptions < 2) {
+      questionErrors[step - 2] = 'At least 2 options are required';
+      isValid = false;
+    }
+    
+    // For multiple-choice, validate correct card exists
+    if (currentQuestion.questionType === 'multiple-choice') {
+      const hasCorrect = currentQuestion.cards.some(card => card.isCorrect);
+      if (!hasCorrect) {
+        questionErrors[step - 2] = 'Please select a correct answer';
+        isValid = false;
+      }
+    }
+    
+    setErrors({ ...errors, questions: questionErrors });
+    return isValid;
+  };
+
+  const handleNext = () => {
+    if (step === 1 && !validateStep1()) return;
+    if (step > 1 && step <= 1 + questionCount && !validateQuestion()) return;
+
+    if (step > 1 && step <= 1 + questionCount) {
+      // Filter out empty cards before saving
+      const filteredQuestion = {
+        ...currentQuestion,
+        cards: currentQuestion.cards.filter(card => card.text.trim() !== '')
+      };
+
+      // Save current question data
+      const questionIndex = step - 2;
+      const newQuestionData = [...questionData];
+      newQuestionData[questionIndex] = filteredQuestion;
+      setQuestionData(newQuestionData);
+
+      setDeck(d => ({
+        ...d,
+        questions: [...d.questions, filteredQuestion],
+      }));
+      setCurrentQuestion(initializeQuestion());
+    }
+
+    if (isLastStep()) {
+      // Validate that we have at least 5 questions
+      if (deck.questions.length < 5) {
+        return; // Don't proceed if validation fails
+      }
+
+      const flair = THEME_FLAIRS.find(f => f.id === deck.theme);
+      const safeFlair = flair ?? THEME_FLAIRS[0];
+      if (!safeFlair) {
+        console.error('No flair found. Please check THEME_FLAIRS list.');
+        return;
+      }
+
+      const finalDeck: Deck = {
+        title: deck.title,
+        description: deck.description,
+        theme: deck.theme,
+        flairCSS: safeFlair.cssClass,
+        questions: deck.questions,
+        flairText: safeFlair.label,
+        createdBy: username,
+        createdAt: Date.now(),
+        id: `deck_${Date.now()}`,
+      };
+
+      onSubmit(finalDeck);
+    }
+
+    setStep(step + 1);
+  };
+
+  const handleBack = () => {
+    if (step === 1) return onClose();
+
+    // If going back to a question step, restore the saved data
+    if (step > 2 && step <= 1 + questionCount) {
+      const questionIndex = step - 2;
+      const savedQuestion = questionData[questionIndex];
+
+      if (savedQuestion) {
+        setCurrentQuestion(savedQuestion);
+      } else {
+        setCurrentQuestion(initializeQuestion());
+      }
+    }
+
+    setStep(step - 1);
+  };
+
+  const updateCard = (index: number, value: string) => {
+    const newCards = currentQuestion.cards.map((card, i) => 
+      i === index ? {...card, text: value} : card
+    );
+    
+    setCurrentQuestion({
+      ...currentQuestion,
+      cards: newCards,
+    });
+  };
+
+  const setCorrectCard = (index: number) => {
+    const newCards = currentQuestion.cards.map((card, i) => ({
+      ...card,
+      isCorrect: i === index
+    }));
+    
+    setCurrentQuestion({
+      ...currentQuestion,
+      cards: newCards,
+    });
+  };
+
+  const addCardOption = () => {
+    if (currentQuestion.cards.length < 6) {
+      setCurrentQuestion({
+        ...currentQuestion,
+        cards: [
+          ...currentQuestion.cards,
+          createGameCard(
+            '', 
+            false, 
+            currentQuestion.cards.length + 1
+          )
+        ],
+      });
+    }
+  };
+
+  const removeCardOption = (index: number) => {
+    if (currentQuestion.cards.length > 2) {
+      const newCards = [...currentQuestion.cards];
+      newCards.splice(index, 1);
+      
+      // Adjust correct card if needed
+      let shouldUpdateCorrect = false;
+      if (currentQuestion.questionType === 'multiple-choice') {
+        shouldUpdateCorrect = currentQuestion.cards[index]?.isCorrect ?? false;
+      }
+      
+      setCurrentQuestion({
+        ...currentQuestion,
+        cards: shouldUpdateCorrect
+          ? newCards.map((card, i) => ({ ...card, isCorrect: i === 0 }))
+          : newCards,
+      });
+    }
+  };
+
+  // Drag and drop functions for sequence questions
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    if (currentQuestion.questionType === 'sequence') {
+      setDraggedIndex(index);
+      e.dataTransfer.effectAllowed = 'move';
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    
+    if (draggedIndex === null || draggedIndex === dropIndex || currentQuestion.questionType !== 'sequence') {
+      return;
+    }
+
+    const newCards = [...currentQuestion.cards];
+    const draggedCard = newCards[draggedIndex];
+    
+    if (!draggedCard) return;
+    
+    // Remove dragged card
+    newCards.splice(draggedIndex, 1);
+    
+    // Insert at new position
+    newCards.splice(dropIndex, 0, draggedCard);
+    
+    // Update sequenceOrder for all cards
+    const updatedCards = newCards.map((card, index) => ({
+      ...card,
+      sequenceOrder: index + 1
+    }));
+    
+    setCurrentQuestion({
+      ...currentQuestion,
+      cards: updatedCards,
+    });
+    
+    setDraggedIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center p-2 sm:p-4 bg-black/80">
+      <div className="bg-gradient-to-br from-purple-800 to-blue-900 rounded-xl p-3 sm:p-6 w-full max-w-2xl md:max-w-3xl lg:max-w-4xl h-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col relative">
+        {isCreatingPost && (
+          <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-sm rounded-xl flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent mx-auto mb-4"></div>
+              <p className="text-white text-lg font-semibold">Creating your deck...</p>
+              <p className="text-blue-200 text-sm mt-2">Please wait while we process your deck</p>
+            </div>
+          </div>
+        )}
+        <div className="flex-1 overflow-auto pb-40 sm:pb-0 pr-2 custom-scrollbar">
+          {step === 1 && (
+            <div className="space-y-4">
+              <h4 className="text-white text-2xl font-bold">Create New Deck</h4>
+              
+              <div>
+                <label className="block text-blue-200">Title *</label>
+                <input
+                  className={`w-full p-2 rounded ${errors.title ? 'bg-red-500/30' : 'bg-white/20'} text-white`}
+                  value={deck.title}
+                  onChange={e => setDeck({ ...deck, title: e.target.value })}
+                  placeholder="Enter deck title"
+                  maxLength={120}
+                />
+                {errors.title && <p className="text-red-400 text-sm mt-1">{errors.title}</p>}
+              </div>
+              
+              <div>
+                <label className="block text-blue-200">Description *</label>
+                <textarea
+                  className={`w-full p-2 rounded ${errors.description ? 'bg-red-500/30' : 'bg-white/20'} text-white`}
+                  value={deck.description}
+                  onChange={e => setDeck({ ...deck, description: e.target.value })}
+                  placeholder="Describe your deck"
+                  rows={3}
+                  maxLength={400}
+                />
+                {errors.description && <p className="text-red-400 text-sm mt-1">{errors.description}</p>}
+              </div>
+              
+              <div>
+                <label className="block text-blue-200 mb-2">Theme</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {THEME_FLAIRS.map(f => (
+                    <button
+                      key={f.id}
+                      onClick={() => setDeck(d => ({ ...d, theme: f.id, flairCSS: f.cssClass }))}
+                      className={`p-2 sm:p-3 rounded-lg transition-all ${deck.theme === f.id ? 'bg-white/30 ring-2 ring-blue-400' : 'bg-white/10 hover:bg-white/20'}`}
+                    >
+                      <div className="text-center">
+                        <div className="text-lg sm:text-xl">{f.icon}</div>
+                        <div className="text-xs sm:text-sm text-white mt-1">{f.label}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step > 1 && !isLastStep() && (
+            <div className="space-y-4">
+              <h4 className="text-white text-lg sm:text-xl font-bold">Question {step - 1}</h4>
+              
+              <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                <button
+                  className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+                    currentQuestion.questionType === 'multiple-choice' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                  onClick={() => setCurrentQuestion({
+                    ...currentQuestion,
+                    questionType: 'multiple-choice'
+                  })}
+                >
+                  <div className="flex items-center justify-center space-x-2">
+                    <span>🔘</span>
+                    <span>Multiple Choice</span>
+                  </div>
+                </button>
+                <button
+                  className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+                    currentQuestion.questionType === 'sequence' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                  onClick={() => setCurrentQuestion({
+                    ...currentQuestion,
+                    questionType: 'sequence'
+                  })}
+                >
+                  <div className="flex items-center justify-center space-x-2">
+                    <span>🔢</span>
+                    <span>Sequence Order</span>
+                  </div>
+                </button>
+              </div>
+              
+              <div>
+                <label className="block text-blue-200">Prompt *</label>
+                <input
+                  className={`w-full p-2 rounded ${errors.questions[step-2] ? 'bg-red-500/30' : 'bg-white/20'} text-white`}
+                  value={currentQuestion.prompt}
+                  onChange={e => setCurrentQuestion({ 
+                    ...currentQuestion, 
+                    prompt: e.target.value 
+                  })}
+                  placeholder="Enter your question"
+                  maxLength={450}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-blue-200 mb-2">
+                  Options * {currentQuestion.questionType === 'sequence' && (
+                    <span className="text-sm text-gray-300 ml-2">(Drag to reorder)</span>
+                  )}
+                </label>
+                
+                {currentQuestion.questionType === 'sequence' && (
+                  <div className="mb-3 p-3 bg-indigo-900/50 rounded-lg border border-indigo-500/30">
+                    <p className="text-blue-200 text-sm mb-2">
+                      <span className="text-yellow-300">ℹ️</span> For sequence questions, the order shown above (1-4) will be the correct order. Players will need to arrange the items in this sequence.
+                    </p>
+                  </div>
+                )}
+                
+                <div className="space-y-3">
+                  {currentQuestion.cards.map((card, idx) => (
+                    <div 
+                      key={card.id} 
+                      className={`flex items-center space-x-2 p-3 rounded-lg bg-white/10 border-2 transition-all ${
+                        currentQuestion.questionType === 'sequence' 
+                          ? 'border-blue-400/50 hover:border-blue-400 cursor-move' 
+                          : 'border-transparent'
+                      } ${
+                        draggedIndex === idx ? 'opacity-50 scale-95' : ''
+                      }`}
+                      draggable={currentQuestion.questionType === 'sequence'}
+                      onDragStart={(e) => handleDragStart(e, idx)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, idx)}
+                      onDragEnd={handleDragEnd}
+                    >
+                      {currentQuestion.questionType === 'sequence' && (
+                        <div className="flex flex-col items-center space-y-1">
+                          <span className="text-white w-8 h-8 flex items-center justify-center rounded-full bg-blue-500 font-bold text-sm">
+                            {idx + 1}
+                          </span>
+                          <div className="text-xs text-gray-300">Drag</div>
+                        </div>
+                      )}
+                      
+                      <input
+                        className="flex-1 p-3 rounded-lg bg-white/20 text-white placeholder-gray-400 focus:bg-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        value={card.text}
+                        onChange={e => updateCard(idx, e.target.value)}
+                        placeholder={`Option ${idx + 1}`}
+                        maxLength={120}
+                      />
+                      
+                      {currentQuestion.questionType === 'multiple-choice' && (
+                        <button
+                          onClick={() => setCorrectCard(idx)}
+                          className={`w-10 h-10 flex items-center justify-center rounded-lg transition-all ${
+                            card.isCorrect 
+                              ? 'bg-green-500 hover:bg-green-600' 
+                              : 'bg-gray-600 hover:bg-gray-500'
+                          }`}
+                          title={card.isCorrect ? 'Correct answer' : 'Mark as correct'}
+                        >
+                          {card.isCorrect ? '✓' : ''}
+                        </button>
+                      )}
+                      
+                      <button
+                        onClick={() => removeCardOption(idx)}
+                        className="w-10 h-10 flex items-center justify-center bg-red-500/80 hover:bg-red-500 rounded-lg transition-all"
+                        title="Remove option"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  
+                  {currentQuestion.cards.length < 6 && (
+                    <button
+                      onClick={addCardOption}
+                      className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-all flex items-center justify-center space-x-2"
+                    >
+                      <span>+</span>
+                      <span>Add Option</span>
+                    </button>
+                  )}
+                </div>
+                
+                {errors.questions[step-2] && (
+                  <p className="text-red-400 text-sm mt-2 p-2 bg-red-500/20 rounded-lg">{errors.questions[step-2]}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {isLastStep() && (
+            <div className="text-white">
+              <h4 className="text-xl sm:text-2xl font-bold mb-4">Review Deck</h4>
+
+              <div className="mb-6 p-4 bg-white/10 rounded-lg">
+                <p className="mb-2"><strong>Title:</strong> {deck.title}</p>
+                <p className="mb-2"><strong>Description:</strong> {deck.description}</p>
+                <p><strong>Theme:</strong> {THEME_FLAIRS.find(t => t.id === deck.theme)?.label}</p>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h5 className="text-lg sm:text-xl font-bold">Questions ({deck.questions.length}/5):</h5>
+                  {deck.questions.length < 5 && (
+                    <button
+                      onClick={() => {
+                        // Add a new question
+                        const newQuestionIndex = deck.questions.length;
+                        setStep(2 + newQuestionIndex);
+                        setCurrentQuestion(initializeQuestion());
+                      }}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all flex items-center space-x-2"
+                    >
+                      <span>+</span>
+                      <span>Add Question</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  {deck.questions.map((q, idx) => (
+                    <div key={idx} className="p-4 bg-white/10 rounded-lg border border-white/20">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-lg font-bold">Q{idx + 1}</span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            q.questionType === 'sequence'
+                              ? 'bg-blue-500/30 text-blue-300'
+                              : 'bg-green-500/30 text-green-300'
+                          }`}>
+                            {q.questionType === 'sequence' ? '🔢 Sequence' : '🔘 Multiple Choice'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => {
+                              // Edit this question
+                              const savedQuestion = questionData[idx];
+                              if (savedQuestion) {
+                                setCurrentQuestion(savedQuestion);
+                              } else {
+                                // Fallback to deck question if no saved data
+                                setCurrentQuestion(q);
+                              }
+                              setStep(2 + idx);
+                            }}
+                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition-all"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => {
+                              // Delete this question
+                              const newQuestions = deck.questions.filter((_, qIdx) => qIdx !== idx);
+                              const newQuestionData = [...questionData];
+                              newQuestionData[idx] = null;
+
+                              setDeck(d => ({ ...d, questions: newQuestions }));
+                              setQuestionData(newQuestionData);
+                            }}
+                            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm font-medium transition-all"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+
+                      <p className="mb-3 text-gray-200">{q.prompt}</p>
+
+                      <div className="space-y-2">
+                        {q.questionType === 'sequence' ? (
+                          <div>
+                            <p className="text-sm text-blue-200 mb-2">Correct Order:</p>
+                            <div className="space-y-1">
+                              {q.cards
+                                .sort((a, b) => (a.sequenceOrder || 0) - (b.sequenceOrder || 0))
+                                .map((card) => (
+                                <div key={card.id} className="flex items-center space-x-3 p-2 bg-blue-500/20 rounded">
+                                  <span className="w-6 h-6 flex items-center justify-center rounded-full bg-blue-500 text-white text-sm font-bold">
+                                    {card.sequenceOrder}
+                                  </span>
+                                  <span className="text-white">{card.text}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-sm text-green-200 mb-2">Options:</p>
+                            <ul className="space-y-1">
+                              {q.cards.map((card, cardIdx) => (
+                                <li
+                                  key={card.id}
+                                  className={`flex items-center space-x-2 p-2 rounded ${
+                                    card.isCorrect
+                                      ? 'bg-green-500/20 text-green-300'
+                                      : 'bg-gray-500/20 text-gray-300'
+                                  }`}
+                                >
+                                  <span className="w-5 h-5 flex items-center justify-center rounded-full bg-gray-600 text-white text-xs">
+                                    {String.fromCharCode(65 + cardIdx)}
+                                  </span>
+                                  <span>{card.text}</span>
+                                  {card.isCorrect && <span className="text-green-400">✓</span>}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {deck.questions.length < 5 && (
+                  <div className="mt-6 p-4 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
+                    <p className="text-yellow-200 text-sm">
+                      <span className="text-yellow-300">⚠️</span> You need at least 5 questions to create a deck. Please add {5 - deck.questions.length} more question{5 - deck.questions.length !== 1 ? 's' : ''}.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col sm:flex-row justify-between gap-3 mt-6 pt-4 border-t border-white/20 sm:relative fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-br from-purple-800 to-blue-900 sm:bg-transparent sm:p-0 sm:border-t">
+          <button
+            onClick={handleBack}
+            className="w-full sm:w-auto px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-all"
+          >
+            {step === 1 ? 'Cancel' : '← Back'}
+          </button>
+
+          <button
+            onClick={handleNext}
+            disabled={isLastStep() && deck.questions.length < 5}
+            className={`w-full sm:w-auto px-6 py-3 text-white rounded-lg font-medium transition-all ${
+              isLastStep()
+                ? deck.questions.length >= 5
+                  ? 'bg-green-600 hover:bg-green-700'
+                  : 'bg-gray-500 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700'
+            }`}
+          >
+            {isLastStep()
+              ? deck.questions.length >= 5
+                ? '✨ Create Deck'
+                : `Need ${5 - deck.questions.length} More Question${5 - deck.questions.length !== 1 ? 's' : ''}`
+              : 'Next →'
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};

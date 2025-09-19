@@ -1,0 +1,44 @@
+{
+  "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
+  "name": "debateduelerhack",
+  "post": {
+    "dir": "dist/client",
+    "entrypoints": {
+      "default": {
+        "entry": "index.html"
+      }
+    }
+  },
+  "server": {
+    "dir": "dist/server",
+    "entry": "index.cjs"
+  },
+  "media": {},
+  "permissions": {
+    "redis": true
+  },
+  "menu": {
+    "items": [
+      {
+        "label": "Create a new post",
+        "description": "debateduelerhack",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/post-create"
+      },
+      {
+        "label": "Clear Redis",
+        "description": "Delete all app keys for this subreddit install",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/clear-redis"
+      }
+    ]
+  },
+  "triggers": {
+    "onAppInstall": "/internal/on-app-install"
+  },
+  "dev": {
+    "subreddit": "debateduelerhack_dev"
+  }
+}
