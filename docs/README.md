@@ -1,100 +1,58 @@
-# Debate Dueler Documentation
+# Debate Dueler Source Code Documentation
 
 ## Overview
 
-Debate Dueler is an interactive Reddit app built with [Devvit](https://developers.reddit.com/docs/) that creates engaging quiz-style games within Reddit posts. Players compete in real-time trivia games with unique scoring mechanics that reward different strategies.
+Debate Dueler is a real-time competitive trivia game built for Reddit's developer platform. This documentation focuses exclusively on the `src/` folder structure and implementation.
 
-## Key Features
+The application is organized into three main layers:
 
-- **Three Scoring Modes**: Contrarian, Conformist, and Trivia
-- **Multiple Question Types**: Multiple choice and sequence-based questions
-- **Real-time Leaderboards**: Live competition tracking
-- **Community Content**: Players can add their own questions
-- **Admin Panel**: Moderators can manage game content
-- **Cross-platform**: Works seamlessly on Reddit web and mobile
+- **Client** (`src/client/`): React-based webview application
+- **Server** (`src/server/`): Express server with game logic and Redis integration
+- **Shared** (`src/shared/`): Common TypeScript types, scoring algorithms, and utilities
+
+## Game Concept
+
+Debate Dueler is a quiz-style game with three unique scoring modes:
+
+- **Contrarian**: Players score higher by choosing less popular answers
+- **Conformist**: Players score higher by choosing more popular answers
+- **Trivia**: Traditional scoring based on correct answers
+
+The game supports two question types:
+- Multiple choice questions
+- Sequence questions (arranging items in correct order)
 
 ## Architecture
 
-The app consists of three main components:
-
-- **Client** (`src/client/`): React application running in Reddit webviews
-- **Devvit Backend** (`src/devvit/`): Reddit app logic and Redis operations
-- **Shared** (`src/shared/`): Common TypeScript types and utilities
-
-## Quick Start
-
-### Prerequisites
-
-- Node.js 18+
-- Reddit Developer Account
-- Devvit CLI installed globally
-
-### Installation
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd debate-dueler
-
-# Install dependencies
-npm install
-
-# Login to Devvit
-npx devvit login
-
-# Start development server
-npm run dev
+```
+src/
+├── client/          # React webview application
+│   ├── components/  # UI components
+│   ├── hooks/       # Custom React hooks
+│   └── public/      # Static assets
+├── server/          # Express server
+│   └── core/        # Game logic and Redis operations
+└── shared/          # Common code
+    ├── types/       # TypeScript definitions
+    └── scoring.ts   # Scoring algorithms
 ```
 
-### Development
+## Key Features
 
-```bash
-# Start the development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Deploy to Reddit
-npm run deploy
-```
+- Real-time leaderboards and competition
+- Community question submissions
+- Admin panel for content moderation
+- Cross-platform Reddit integration
+- Persistent game state via Redis
+- Responsive React UI with Tailwind CSS
 
 ## Documentation Structure
 
-- [Architecture](architecture.md) - System design and data flow
-- [Data Structures](data-structures.md) - TypeScript interfaces and models
-- [Client Components](client-components.md) - React components and UI logic
-- [Devvit Backend](devvit-backend.md) - Redis operations and server-side logic
-- [Scoring System](scoring-system.md) - Game mechanics and algorithms
-- [Message Protocols](message-protocols.md) - WebView-to-Devvit communication
-- [Admin Features](admin-features.md) - Moderator capabilities
-- [Development Workflow](development-workflow.md) - Contribution guidelines
-- [Deployment](deployment.md) - Publishing Reddit apps
+- [Client Application](client.md) - React webview implementation
+- [Server Logic](server.md) - Backend game mechanics and API
+- [Shared Code](shared.md) - Common types and utilities
+- [Game Mechanics](game-mechanics.md) - Scoring system and rules
 
-## Game Mechanics
+## Getting Started
 
-### Scoring Modes
-
-1. **Contrarian**: Score higher by choosing less popular answers
-2. **Conformist**: Score higher by choosing more popular answers
-3. **Trivia**: Traditional scoring based on correct answers
-
-### Question Types
-
-- **Multiple Choice**: Select one correct answer from options
-- **Sequence**: Arrange items in the correct order
-
-### Real-time Features
-
-- Live leaderboard updates
-- Community question submissions
-- Instant scoring feedback
-- Admin moderation tools
-
-## Contributing
-
-See [Development Workflow](development-workflow.md) for detailed contribution guidelines.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+See the main README.md for setup instructions and development workflow.

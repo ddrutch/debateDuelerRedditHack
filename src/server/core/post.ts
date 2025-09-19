@@ -37,9 +37,14 @@ export const createPostWithDeck = async (deckData: Deck) => {
     title: `${deckData.title} by ${deckData.createdBy}`,
   });
 
-  // Note: Post flair functionality would go here, but Devvit Web's setPostFlair
-  // has different parameters than the original system. This can be added later
-  // if the correct API parameters are determined.
+
+  // await reddit.setPostFlair({
+  //   postId: post.id,
+  //   subredditName,
+  //   flairTemplateId: '43a728c2-90b1-11f0-a3d7-725bb7b9ec89',
+  //   text: deckData.flairText ?? 'not defined',
+  //   // You can also pass backgroundColor | textColor | cssClass if needed
+  // });
 
   // Save the deck data to Redis using the new post ID
   await saveDeck({ redis, postId: post.id, deck: deckData });
