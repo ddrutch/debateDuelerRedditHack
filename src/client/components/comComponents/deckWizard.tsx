@@ -318,12 +318,19 @@ export const CreateDeckWizard: React.FC<CreateDeckWizardProps> = ({ onClose, onS
               
               <div>
                 <label className="block text-blue-200">Title *</label>
-                <input
-                  className={`w-full p-2 rounded ${errors.title ? 'bg-red-500/30' : 'bg-white/20'} text-white`}
+                <textarea
+                  className={`w-full p-2 rounded resize-none overflow-hidden ${errors.title ? 'bg-red-500/30' : 'bg-white/20'} text-white`}
                   value={deck.title}
                   onChange={e => setDeck({ ...deck, title: e.target.value })}
                   placeholder="Enter deck title"
                   maxLength={120}
+                  rows={1}
+                  style={{ minHeight: '2.5rem', maxHeight: '6rem' }}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = Math.min(target.scrollHeight, 96) + 'px';
+                  }}
                 />
                 {errors.title && <p className="text-red-400 text-sm mt-1">{errors.title}</p>}
               </div>
@@ -331,12 +338,18 @@ export const CreateDeckWizard: React.FC<CreateDeckWizardProps> = ({ onClose, onS
               <div>
                 <label className="block text-blue-200">Description *</label>
                 <textarea
-                  className={`w-full p-2 rounded ${errors.description ? 'bg-red-500/30' : 'bg-white/20'} text-white`}
+                  className={`w-full p-2 rounded resize-none overflow-hidden ${errors.description ? 'bg-red-500/30' : 'bg-white/20'} text-white`}
                   value={deck.description}
                   onChange={e => setDeck({ ...deck, description: e.target.value })}
                   placeholder="Describe your deck"
                   rows={3}
                   maxLength={400}
+                  style={{ minHeight: '4rem', maxHeight: '8rem' }}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = Math.min(target.scrollHeight, 128) + 'px';
+                  }}
                 />
                 {errors.description && <p className="text-red-400 text-sm mt-1">{errors.description}</p>}
               </div>
@@ -402,15 +415,22 @@ export const CreateDeckWizard: React.FC<CreateDeckWizardProps> = ({ onClose, onS
               
               <div>
                 <label className="block text-blue-200">Prompt *</label>
-                <input
-                  className={`w-full p-2 rounded ${errors.questions[step-2] ? 'bg-red-500/30' : 'bg-white/20'} text-white`}
+                <textarea
+                  className={`w-full p-2 rounded resize-none overflow-hidden ${errors.questions[step-2] ? 'bg-red-500/30' : 'bg-white/20'} text-white`}
                   value={currentQuestion.prompt}
-                  onChange={e => setCurrentQuestion({ 
-                    ...currentQuestion, 
-                    prompt: e.target.value 
+                  onChange={e => setCurrentQuestion({
+                    ...currentQuestion,
+                    prompt: e.target.value
                   })}
                   placeholder="Enter your question"
                   maxLength={450}
+                  rows={1}
+                  style={{ minHeight: '2.5rem', maxHeight: '8rem' }}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = Math.min(target.scrollHeight, 128) + 'px';
+                  }}
                 />
               </div>
               
@@ -455,12 +475,19 @@ export const CreateDeckWizard: React.FC<CreateDeckWizardProps> = ({ onClose, onS
                         </div>
                       )}
                       
-                      <input
-                        className="flex-1 p-3 rounded-lg bg-white/20 text-white placeholder-gray-400 focus:bg-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      <textarea
+                        className="flex-1 p-3 rounded-lg bg-white/20 text-white placeholder-gray-400 focus:bg-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none overflow-hidden"
                         value={card.text}
                         onChange={e => updateCard(idx, e.target.value)}
                         placeholder={`Option ${idx + 1}`}
                         maxLength={120}
+                        rows={1}
+                        style={{ minHeight: '3rem', maxHeight: '6rem' }}
+                        onInput={(e) => {
+                          const target = e.target as HTMLTextAreaElement;
+                          target.style.height = 'auto';
+                          target.style.height = Math.min(target.scrollHeight, 96) + 'px';
+                        }}
                       />
                       
                       {currentQuestion.questionType === 'multiple-choice' && (

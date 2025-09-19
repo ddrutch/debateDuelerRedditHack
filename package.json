@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "debateduelerhack",
+  "name": "debateduelerred",
   "version": "0.0.0",
   "license": "BSD-3-Clause",
   "type": "module",
@@ -13,7 +13,7 @@
     "deploy": "npm run build && devvit upload",
     "dev": "concurrently -k -p \"[{name}]\" -n \"CLIENT,SERVER,DEVVIT\" -c \"blue,green,magenta\" \"npm run dev:client\" \"npm run dev:server\" \"npm run dev:devvit\"",
     "dev:client": "cd src/client && vite build --watch",
-    "dev:devvit": "devvit playtest",
+    "dev:devvit": "devvit playtest debateduelerReddit",
     "dev:server": "cd src/server && vite build --watch",
     "dev:vite": "cd src/client && vite --port 7474",
     "lint": "eslint ./src",

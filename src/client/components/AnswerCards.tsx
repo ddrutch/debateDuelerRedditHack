@@ -191,21 +191,39 @@ export const AnswerCards: React.FC<AnswerCardsProps> = ({
               stateClasses = isSelected ? 'border-white bg-white/20 hover:bg-white/30' : 'border-white/50 bg-white/10 hover:bg-white/20';
             } else {
               if (isSelected) {
-                const gamemodeColor = getGamemodeColor(scoringMode);
-                extraStyle = {
-                  borderColor: gamemodeColor,
-                  backgroundColor: `${gamemodeColor}33`,
-                  boxShadow: `0 0 10px ${gamemodeColor}99`,
-                };
+                const goldColor = '#fbbf24'; // yellow-400
+                if (scoringMode === 'trivia') {
+                  const bgColor = isCorrect ? '#22c55e' : '#ef4444'; // green-500 or red-500
+                  extraStyle = {
+                    borderColor: goldColor,
+                    backgroundColor: `${bgColor}33`,
+                    boxShadow: `0 0 10px ${bgColor}99`,
+                  };
+                } else {
+                  const gamemodeColor = getGamemodeColor(scoringMode);
+                  extraStyle = {
+                    borderColor: goldColor,
+                    backgroundColor: `${gamemodeColor}33`,
+                    boxShadow: `0 0 10px ${gamemodeColor}99`,
+                  };
+                }
               } else if (playerSession.scoringMode === 'trivia') {
                 stateClasses = isCorrect ? 'border-green-400 bg-green-500/20' : 'border-red-400 bg-red-500/20';
               } else {
                 stateClasses = 'border-transparent';
               }
             }
+            const tintStyle = getTintStyle(card.id);
+            const combinedStyle = {...tintStyle, ...extraStyle};
+            let barStyle: React.CSSProperties = {};
+            if (showResults) {
+              barStyle.backgroundColor = combinedStyle.backgroundColor;
+            } else {
+              barStyle.background = 'linear-gradient(to right, rgba(59, 130, 246, 0.3), rgba(147, 51, 234, 0.3))';
+            }
             return (
-              <button key={card.id} onClick={() => handleCardSelect(card.id)} disabled={showResults || isSubmitting} className={`${baseClasses} ${stateClasses}`} style={{...getTintStyle(card.id), ...extraStyle}}>
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/30 to-purple-500/30 transition-all duration-1000" style={{ width: `${animatedWidths[card.id] || 0}%` }} />
+              <button key={card.id} onClick={() => handleCardSelect(card.id)} disabled={showResults || isSubmitting} className={`${baseClasses} ${stateClasses}`} style={combinedStyle}>
+                <div className="absolute inset-0 transition-all duration-1000" style={{ width: `${animatedWidths[card.id] || 0}%`, ...barStyle }} />
                 {/* Responsive text size */}
                 <span className="relative flex-1 font-semibold text-left text-sm sm:text-base md:text-xl text-white">{card.text}</span>
                 {showResults && (

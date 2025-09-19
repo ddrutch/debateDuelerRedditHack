@@ -26,6 +26,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
   finalScore,
 }) => {
     const [showQuestionAddedFeedback, setShowQuestionAddedFeedback] = useState(false);
+    const [addQuestionError, setAddQuestionError] = useState<string | null>(null);
     
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [isAddingQuestion, setIsAddingQuestion] = useState(false);
@@ -134,6 +135,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
 
   const handleAddQuestion = async () => {
     setIsAddingQuestion(true); // Start loading
+    setAddQuestionError(null); // Clear any previous errors
 
     // Filter out empty cards and validate
     const validCards = newQuestion.cards.filter(text => text.trim());
@@ -175,8 +177,14 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
       resetForm();
 
       setTimeout(() => setShowQuestionAddedFeedback(false), 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to add question:', error);
+      // Show error message to user
+      if (error?.message) {
+        setAddQuestionError(error.message);
+      } else {
+        setAddQuestionError('Failed to add question. Please try again.');
+      }
     } finally {
       setIsAddingQuestion(false); // End loading
     }
@@ -190,6 +198,7 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
       correctIndex: 0,
     });
     setQuestionType('multiple-choice');
+    setAddQuestionError(null); // Clear error when resetting form
   };
 
   const handleCreateDeck = async (createdDeck: Deck) => {
@@ -400,7 +409,10 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
         </button>
         
         <button
-          onClick={() => setIsAddQuestionModalOpen(true)}
+          onClick={() => {
+            setIsAddQuestionModalOpen(true);
+            setAddQuestionError(null); // Clear any previous errors
+          }}
           disabled={isAddingQuestion}
           className="w-20 h-20 flex flex-col items-center justify-center bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white font-bold rounded-lg transition-all"
         >
@@ -496,13 +508,19 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
                 {/* Prompt */}
                 <div>
                   <label className="block text-blue-200 mb-2">Question Prompt *</label>
-                  <input
-                    type="text"
+                  <textarea
                     value={newQuestion.prompt}
                     onChange={(e) => setNewQuestion({ ...newQuestion, prompt: e.target.value })}
                     placeholder="Enter your question..."
-                    className="w-full p-3 rounded-lg bg-white/20 text-white placeholder-gray-400 border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="w-full p-3 rounded-lg bg-white/20 text-white placeholder-gray-400 border border-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none overflow-hidden"
                     maxLength={450}
+                    rows={1}
+                    style={{ minHeight: '3rem', maxHeight: '8rem' }}
+                    onInput={(e) => {
+                      const target = e.target as HTMLTextAreaElement;
+                      target.style.height = 'auto';
+                      target.style.height = Math.min(target.scrollHeight, 128) + 'px';
+                    }}
                   />
                 </div>
 
@@ -533,13 +551,19 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
                           </div>
                         )}
 
-                        <input
-                          type="text"
+                        <textarea
                           value={card}
                           onChange={(e) => updateCard(idx, e.target.value)}
                           placeholder={questionType === 'sequence' ? `Step ${idx + 1}` : `Option ${idx + 1}`}
-                          className="flex-1 p-3 rounded-lg bg-white/20 text-white placeholder-gray-400 focus:bg-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                          className="flex-1 p-3 rounded-lg bg-white/20 text-white placeholder-gray-400 focus:bg-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none overflow-hidden"
                           maxLength={120}
+                          rows={1}
+                          style={{ minHeight: '3rem', maxHeight: '6rem' }}
+                          onInput={(e) => {
+                            const target = e.target as HTMLTextAreaElement;
+                            target.style.height = 'auto';
+                            target.style.height = Math.min(target.scrollHeight, 96) + 'px';
+                          }}
                         />
 
                         {questionType === 'multiple-choice' && (
@@ -577,6 +601,15 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
                     )}
                   </div>
                 </div>
+
+                {/* Error Message */}
+                {addQuestionError && (
+                  <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+                    <p className="text-red-200 text-sm">
+                      <span className="text-red-300">❌</span> {addQuestionError}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 

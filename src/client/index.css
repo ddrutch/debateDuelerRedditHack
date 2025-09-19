@@ -24,3 +24,18 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, rgba(147, 51, 234, 1), rgba(59, 130, 246, 1));
 }
+
+/* Auto-resizing textarea styles */
+textarea {
+  transition: height 0.2s ease-in-out;
+  line-height: 1.5;
+}
+
+textarea:focus {
+  outline: none;
+}
+
+/* Ensure textareas maintain proper spacing and don't overflow containers */
+textarea.resize-none {
+  resize: none;
+}

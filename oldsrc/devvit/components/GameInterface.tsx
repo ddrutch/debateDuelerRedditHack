@@ -17,7 +17,7 @@ export const MainScreen: Devvit.BlockComponent<MainScreenProps> = ({ onPlayPress
         imageWidth={1500}
         height="100%"
         width="100%"
-        url="background2.png"
+        url="background.png"
         description="Striped blue background"
         resizeMode="cover"
       />

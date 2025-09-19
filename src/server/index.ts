@@ -281,6 +281,15 @@ router.post('/api/add-question', async (req, res): Promise<void> => {
       return;
     }
 
+    // Check deck size limit (200 questions)
+    if (deck.questions.length >= 200) {
+      res.status(400).json({
+        status: 'error',
+        message: 'Deck has reached the maximum limit of 200 questions. Cannot add more questions.',
+      });
+      return;
+    }
+
     // Add author attribution and generate ID
     const username = await reddit.getCurrentUsername() || 'Anonymous';
     const newQuestion: Question = {

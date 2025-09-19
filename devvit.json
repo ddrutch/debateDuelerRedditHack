@@ -1,6 +1,6 @@
 {
   "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
-  "name": "debateduelerhack",
+  "name": "debateduelerred",
   "post": {
     "dir": "dist/client",
     "entrypoints": {
@@ -13,7 +13,9 @@
     "dir": "dist/server",
     "entry": "index.cjs"
   },
-  "media": {},
+  "media": {
+    "dir": "src/client/public/assets"
+  },
   "permissions": {
     "redis": true
   },
